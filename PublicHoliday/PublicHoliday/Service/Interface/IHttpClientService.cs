@@ -2,6 +2,6 @@
 {
     public interface IHttpClientService
     {
-        Task<HttpResponseMessage> Get(string url);
+        Task<TResponse> Get<TResponse>(string url);
     }
 }

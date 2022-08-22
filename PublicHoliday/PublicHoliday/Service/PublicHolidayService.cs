@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using PublicHoliday.Model;
 using PublicHoliday.Model.Response;
 using PublicHoliday.Repository.Interface;
@@ -19,6 +18,26 @@ namespace PublicHoliday.Service
             _publicHolidayRepository = publicHolidayRepository;
         }
 
+        public async Task<string> GetSpecificDayStatus(DateTime date, string country)
+        {
+            if (await IsPublicHolidy(date, country)) return "holiday";
+            return await IsWorking(date, country) ? "workday" : "free day";
+        }
+
+        async Task<bool> IsPublicHolidy(DateTime date, string country)
+        {
+            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=isPublicHoliday&date={date:dd-MM-yyyy}&country={country}";
+            var response = await _httpClientService.Get<PublicHolidayResponse>(url);
+            return response.IsPublicHoliday;
+        }
+
+        async Task<bool> IsWorking(DateTime date, string country)
+        {
+            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=isWorkDay&date={date:dd-MM-yyyy}&country={country}";
+            var response = await _httpClientService.Get<WorkingDayResponse>(url);
+            return response.IsWorkDay;
+        }
+
         public async Task<List<MonthlyHolidayResponse>> GetMonthlyHoliday(int year, string country)
         {
             var monthlyHolidaysFromDb = _publicHolidayRepository.MonthlyHoliday.Where(p => p.Year == year && p.Country == country);
@@ -29,27 +48,12 @@ namespace PublicHoliday.Service
             }
 
             var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=getHolidaysForYear&year={year}&country={country}";
-            var response = await _httpClientService.Get(url);
-            var monthlyHolidayResponses = await ConvertToMonthlyHolidayResponses(response);
+            var response = await _httpClientService.Get<List<MonthlyHolidayResponse>>(url);
 
-            var monthlyHolidays = ConvertToMonthlyHolidays(monthlyHolidayResponses, country);
+            var monthlyHolidays = ConvertToMonthlyHolidays(response, country);
             _publicHolidayRepository.InsertMonthlyHolidays(monthlyHolidays);
 
-            return monthlyHolidayResponses;
-        }
-
-        private static async Task<List<MonthlyHolidayResponse>> ConvertToMonthlyHolidayResponses(HttpResponseMessage response)
-        {
-            var content = await response.Content.ReadAsStringAsync();
-
-            var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
-            if (!string.IsNullOrWhiteSpace(errorResponse.Error))
-            {
-                throw new Exception(errorResponse.Error);
-            }
-
-            var monthlyHolidayResponses = JsonConvert.DeserializeObject<List<MonthlyHolidayResponse>>(content);
-            return monthlyHolidayResponses;
+            return response;
         }
 
         private static List<MonthlyHoliday> ConvertToMonthlyHolidays(List<MonthlyHolidayResponse> response, string country)
@@ -70,20 +74,12 @@ namespace PublicHoliday.Service
             }
 
             var url = "https://kayaposoft.com/enrico/json/v2.0/?action=getSupportedCountries";
-            var response = await _httpClientService.Get(url);
+            var response = await _httpClientService.Get<List<SupportedCountryResponse>>(url);
 
-            var supportedCountryResponses = await ConvertToSupportedCountryResponses(response);
-
-            var supportedCountries = ConvertToSupportedCountries(supportedCountryResponses);
+            var supportedCountries = ConvertToSupportedCountries(response);
             _publicHolidayRepository.InsertSupportedCountries(supportedCountries);
 
-            return supportedCountryResponses;
-        }
-
-        private async Task<List<SupportedCountryResponse>> ConvertToSupportedCountryResponses(HttpResponseMessage response)
-        {
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<SupportedCountryResponse>>(content);
+            return response;
         }
 
         private static List<SupportedCountry> ConvertToSupportedCountries(List<SupportedCountryResponse> response)

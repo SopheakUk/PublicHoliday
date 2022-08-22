@@ -33,5 +33,12 @@ namespace PublicHoliday.Controllers
         {
             return await _publicHolidayService.GetMonthlyHoliday(year, country);
         }
+
+        [HttpGet()]
+        [Route("GetSpecificDayStatus")]
+        public async Task<string> GetSpecificDayStatus(DateTime date, string country)
+        {
+            return await _publicHolidayService.GetSpecificDayStatus(date, country);
+        }
     }
 }

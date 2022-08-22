@@ -6,5 +6,6 @@ namespace PublicHoliday.Service.Interface
     {
         Task<List<SupportedCountryResponse>> GetCountryList();
         Task<List<MonthlyHolidayResponse>> GetMonthlyHoliday(int year, string country);
+        Task<string> GetSpecificDayStatus(DateTime date, string country);
     }
 }

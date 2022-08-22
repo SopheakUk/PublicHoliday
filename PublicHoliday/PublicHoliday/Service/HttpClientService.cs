@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using PublicHoliday.Model.Response;
 using PublicHoliday.Service.Interface;
 
 namespace PublicHoliday.Service
@@ -12,7 +13,7 @@ namespace PublicHoliday.Service
             _httpClient = httpClient;
         }
 
-        public async Task<HttpResponseMessage> Get(string url)
+        public async Task<TResponse> Get<TResponse>(string url)
         {
             var response = await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode)
@@ -20,7 +21,19 @@ namespace PublicHoliday.Service
                 throw new Exception(await response.Content.ReadAsStringAsync());
             }
 
-            return response;
+            var content = await response.Content.ReadAsStringAsync();
+            CheckError(content);
+
+            return JsonConvert.DeserializeObject<TResponse>(content);
+        }
+
+        private static void CheckError(string content)
+        {
+            var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
+            if (!string.IsNullOrWhiteSpace(errorResponse.Error))
+            {
+                throw new Exception(errorResponse.Error);
+            }
         }
     }
 }
