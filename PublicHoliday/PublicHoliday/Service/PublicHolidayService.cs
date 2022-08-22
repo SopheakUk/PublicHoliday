@@ -24,46 +24,14 @@ namespace PublicHoliday.Service
             return await IsWorking(date, country) ? "workday" : "free day";
         }
 
-        async Task<bool> IsPublicHolidy(DateTime date, string country)
+        public async Task<List<GroupMonthlyHolidayResponse>> GetGroupMonthlyHoliday(int year, string country)
         {
-            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=isPublicHoliday&date={date:dd-MM-yyyy}&country={country}";
-            var response = await _httpClientService.Get<PublicHolidayResponse>(url);
-            return response.IsPublicHoliday;
+            return ConvertToGroupMonthlyHolidayResponses(await GetMonthlyHoliday(year, country));
         }
 
-        async Task<bool> IsWorking(DateTime date, string country)
+        public async Task<int> GetMaximumNumberOfFree(int year, string country)
         {
-            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=isWorkDay&date={date:dd-MM-yyyy}&country={country}";
-            var response = await _httpClientService.Get<WorkingDayResponse>(url);
-            return response.IsWorkDay;
-        }
-
-        public async Task<List<MonthlyHolidayResponse>> GetMonthlyHoliday(int year, string country)
-        {
-            var monthlyHolidaysFromDb = _publicHolidayRepository.MonthlyHoliday.Where(p => p.Year == year && p.Country == country);
-
-            if (monthlyHolidaysFromDb.Any())
-            {
-                return ConvertToMonthlyHolidayResponses(monthlyHolidaysFromDb);
-            }
-
-            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=getHolidaysForYear&year={year}&country={country}";
-            var response = await _httpClientService.Get<List<MonthlyHolidayResponse>>(url);
-
-            var monthlyHolidays = ConvertToMonthlyHolidays(response, country);
-            _publicHolidayRepository.InsertMonthlyHolidays(monthlyHolidays);
-
-            return response;
-        }
-
-        private static List<MonthlyHoliday> ConvertToMonthlyHolidays(List<MonthlyHolidayResponse> response, string country)
-        {
-            return response.Select(p => new MonthlyHoliday(p, country)).ToList();
-        }
-
-        private static List<MonthlyHolidayResponse> ConvertToMonthlyHolidayResponses(IQueryable<MonthlyHoliday> monthlyHolidays)
-        {
-            return monthlyHolidays.Select(p => new MonthlyHolidayResponse(p)).ToList();
+            return (await GetMonthlyHoliday(year, country)).Count;
         }
 
         public async Task<List<SupportedCountryResponse>> GetCountryList()
@@ -80,6 +48,53 @@ namespace PublicHoliday.Service
             _publicHolidayRepository.InsertSupportedCountries(supportedCountries);
 
             return response;
+        }
+
+        private async Task<bool> IsPublicHolidy(DateTime date, string country)
+        {
+            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=isPublicHoliday&date={date:dd-MM-yyyy}&country={country}";
+            var response = await _httpClientService.Get<PublicHolidayResponse>(url);
+            return response.IsPublicHoliday;
+        }
+
+        private async Task<bool> IsWorking(DateTime date, string country)
+        {
+            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=isWorkDay&date={date:dd-MM-yyyy}&country={country}";
+            var response = await _httpClientService.Get<WorkingDayResponse>(url);
+            return response.IsWorkDay;
+        }
+
+        private async Task<List<MonthlyHoliday>> GetMonthlyHoliday(int year, string country)
+        {
+            var monthlyHolidaysFromDb = _publicHolidayRepository.MonthlyHoliday.Where(p => p.Year == year && p.Country == country);
+
+            if (monthlyHolidaysFromDb.Any())
+            {
+                return monthlyHolidaysFromDb.ToList();
+            }
+
+            var url = $"https://kayaposoft.com/enrico/json/v2.0/?action=getHolidaysForYear&year={year}&country={country}";
+            var response = await _httpClientService.Get<List<MonthlyHolidayResponse>>(url);
+
+            var monthlyHolidays = ConvertToMonthlyHolidays(response, country);
+            _publicHolidayRepository.InsertMonthlyHolidays(monthlyHolidays);
+
+            return monthlyHolidays;
+        }
+
+        private static List<MonthlyHoliday> ConvertToMonthlyHolidays(List<MonthlyHolidayResponse> response, string country)
+        {
+            return response.Select(p => new MonthlyHoliday(p, country)).ToList();
+        }
+
+        private static List<GroupMonthlyHolidayResponse> ConvertToGroupMonthlyHolidayResponses(
+            IEnumerable<MonthlyHoliday> monthlyHolidays)
+        {
+            return monthlyHolidays.GroupBy(p => p.Month).Select(p => new GroupMonthlyHolidayResponse()
+            {
+                Month = p.Key,
+                Days = p.OrderBy(x => x.Day).Select(q => q.Day).ToList()
+            }).OrderBy(p => p.Month).ToList();
         }
 
         private static List<SupportedCountry> ConvertToSupportedCountries(List<SupportedCountryResponse> response)

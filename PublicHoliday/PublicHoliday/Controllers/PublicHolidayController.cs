@@ -28,10 +28,17 @@ namespace PublicHoliday.Controllers
         }
 
         [HttpGet()]
-        [Route("GetMonthlyHoliday")]
-        public async Task<List<MonthlyHolidayResponse>> GetMonthlyHoliday(int year, string country)
+        [Route("GetGroupMonthlyHoliday")]
+        public async Task<List<GroupMonthlyHolidayResponse>> GetGroupMonthlyHoliday(int year, string country)
         {
-            return await _publicHolidayService.GetMonthlyHoliday(year, country);
+            return await _publicHolidayService.GetGroupMonthlyHoliday(year, country);
+        }
+
+        [HttpGet()]
+        [Route("GetMaximumNumberOfFree")]
+        public async Task<int> GetMaximumNumberOfFree(int year, string country)
+        {
+            return await _publicHolidayService.GetMaximumNumberOfFree(year, country);
         }
 
         [HttpGet()]
