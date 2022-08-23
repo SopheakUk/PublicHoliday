@@ -1,0 +1,25 @@
+version: '3.4'
+
+services:
+  publicholiday:
+    image: "sopheakuk/publicholiday:latest"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+    ports:
+      - "5050:80"
+    volumes:
+      - /root/https:/https/
+    depends_on:
+      - sql_server
+  sql_server:
+    image: "mcr.microsoft.com/mssql/server"
+    user: root
+    environment:
+        SA_PASSWORD: "P@ssword"
+        ACCEPT_EULA: "Y"
+        MSSQL_PID: "Express"
+    volumes:
+      - ./sql-data/data:/var/opt/mssql/data
+      - ./sql-data/log:/var/opt/mssql/log
+      - ./sql-data/secrets:/var/opt/mssql/secrets

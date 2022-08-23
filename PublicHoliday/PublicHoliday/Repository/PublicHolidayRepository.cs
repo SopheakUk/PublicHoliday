@@ -15,7 +15,9 @@ namespace PublicHoliday.Repository
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseLazyLoadingProxies().UseSqlServer(_configuration.GetConnectionString("Db"));
+            var cnn = _configuration.GetConnectionString("Db");
+            Console.WriteLine(cnn);
+            optionsBuilder.UseLazyLoadingProxies().UseSqlServer(cnn);
         }
 
         public DbSet<SupportedCountry> SupportedCountry { get; set; }

@@ -20,3 +20,9 @@ PublicHoliday/PublicHoliday.Test/bin/Debug/net6.0/
 PublicHoliday/PublicHoliday.Test/obj/Debug/net6.0/
 
 PublicHoliday/PublicHoliday.Test/obj/
+
+PublicHoliday/bin/Debug/
+
+PublicHoliday/obj/Debug/
+
+PublicHoliday/obj/Docker/

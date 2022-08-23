@@ -29,11 +29,25 @@ namespace PublicHoliday.Service
 
         private static void CheckError(string content)
         {
-            var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
-            if (!string.IsNullOrWhiteSpace(errorResponse.Error))
+            if (TryToDeserializeObject(content, out var errorResponse))
             {
-                throw new Exception(errorResponse.Error);
+                if (!string.IsNullOrWhiteSpace(errorResponse.Error))
+                {
+                    throw new Exception(errorResponse.Error);
+                }
             }
+        }
+
+        private static bool TryToDeserializeObject(string content, out ErrorResponse errorResponse)
+        {
+            try
+            {
+                errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
+                return true;
+            }
+            catch { }
+            errorResponse = null;
+            return false;
         }
     }
 }

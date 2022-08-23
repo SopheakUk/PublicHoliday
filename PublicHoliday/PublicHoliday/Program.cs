@@ -5,11 +5,12 @@ using PublicHoliday.Repository.Interface;
 using PublicHoliday.Repository;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PublicHoliday.Filter;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers().AddNewtonsoftJson();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -29,7 +30,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+
+
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IPublicHolidayRepository>() as PublicHolidayRepository;
+    db.Database.Migrate();
+}
 
 app.UseSwagger();
 app.UseSwaggerUI();

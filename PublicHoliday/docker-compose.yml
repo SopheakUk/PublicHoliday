@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  publicholiday:
+    image: ${DOCKER_REGISTRY-}publicholiday
+    build:
+      context: .
+      dockerfile: PublicHoliday/Dockerfile
